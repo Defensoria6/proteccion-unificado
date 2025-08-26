@@ -417,6 +417,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="printModal('proteccion')"><i class="fas fa-print me-1"></i> Imprimir</button>
                     <button type="button" class="btn btn-primary" id="saveProteccion">
                         <span id="proteccionSpinner" class="loading-spinner" style="display: none;"></span>
                         <span id="proteccionButtonText">Guardar Registro</span>
@@ -501,6 +502,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="printModal('capacidad')"><i class="fas fa-print me-1"></i> Imprimir</button>
                     <button type="button" class="btn btn-primary" id="saveCapacidad">
                         <span id="capacidadSpinner" class="loading-spinner" style="display: none;"></span>
                         <span id="capacidadButtonText">Guardar Registro</span>
@@ -585,6 +587,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="printModal('restriccion')"><i class="fas fa-print me-1"></i> Imprimir</button>
                     <button type="button" class="btn btn-primary" id="saveRestriccion">
                         <span id="restriccionSpinner" class="loading-spinner" style="display: none;"></span>
                         <span id="restriccionButtonText">Guardar Registro</span>
@@ -669,6 +672,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="printModal('internacion')"><i class="fas fa-print me-1"></i> Imprimir</button>
                     <button type="button" class="btn btn-primary" id="saveInternacion">
                         <span id="internacionSpinner" class="loading-spinner" style="display: none;"></span>
                         <span id="internacionButtonText">Guardar Registro</span>
@@ -1016,6 +1020,8 @@
                                     <button class="btn btn-sm btn-warning me-2" onclick="editRegistro('${registro.id}')">
                                         <i class="fas fa-edit me-1"></i> Editar
                                     </button>
+                                    <button class="btn btn-sm btn-outline-secondary me-2" onclick="printRegistro(\'${registro.id}\')"><i class="fas fa-print me-1"></i> Imprimir</button>
+                                    <button class="btn btn-sm btn-outline-secondary me-2" onclick="printRegistro(\'${registro.id}\')"><i class="fas fa-print me-1"></i> Imprimir</button>
                                     <button class="btn btn-sm btn-danger" onclick="deleteRegistro('${registro.id}')">
                                         <i class="fas fa-trash me-1"></i> Eliminar
                                     </button>
@@ -1060,6 +1066,7 @@
                                     <button class="btn btn-sm btn-warning me-2" onclick="editRegistro('${registro.id}')">
                                         <i class="fas fa-edit me-1"></i> Editar
                                     </button>
+                                    <button class="btn btn-sm btn-outline-secondary me-2" onclick="printRegistro(\'${registro.id}\')"><i class="fas fa-print me-1"></i> Imprimir</button>
                                     <button class="btn btn-sm btn-danger" onclick="deleteRegistro('${registro.id}')">
                                         <i class="fas fa-trash me-1"></i> Eliminar
                                     </button>
@@ -1581,6 +1588,122 @@
                 });
             }
         }
+    
+        // ====== Funciones de impresión ======
+        function buildRegistroPrintable(registro) {
+            const rows = [
+                ['Tipo', registro.tipo || ''],
+                ['Nombre', registro.nombre || ''],
+                ['DNI', registro.dni || ''],
+                ['Edad', registro.edad != null ? registro.edad : ''],
+                ['Teléfono', registro.telefono || ''],
+                ['Dirección', registro.direccion || ''],
+                ['Intervención', registro.intervencion || ''],
+                ['Organismo', (registro.organismo && registro.organismo.nombre) ? registro.organismo.nombre : ''],
+                ['Contacto organismo', (registro.organismo && registro.organismo.contacto) ? registro.organismo.contacto : ''],
+                ['Fecha', registro.fecha ? formatDate(registro.fecha) : ''],
+                ['Estado', registro.estado || ''],
+                ['Descripción', registro.descripcion || '']
+            ];
+            
+            let tableRows = rows.map(([k, v]) => 
+                `<tr><th style="text-align:left;padding:8px;border:1px solid #ddd;width:30%">${k}</th><td style="padding:8px;border:1px solid #ddd;">${v}</td></tr>`
+            ).join('');
+            
+            return `
+                <div style="font-family: Arial, sans-serif; color:#111; max-width: 900px; margin: 0 auto;">
+                    <h2 style="text-align:center; margin:0 0 16px 0;">Sistema Unificado de Protección de Personas</h2>
+                    <h3 style="text-align:center; margin:0 0 20px 0;">Ficha de Caso</h3>
+                    <table style="border-collapse: collapse; width: 100%;">${tableRows}</table>
+                </div>
+            `;
+        }
+
+        function printHTMLContent(contentHTML) {
+            const w = window.open('', '_blank');
+            if (!w) return showToast("Bloqueador de ventanas emergentes activo. Habilítelo para imprimir.", "warning");
+            w.document.open();
+            w.document.write(`
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                    <meta charset="utf-8" />
+                    <title>Impresión</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1" />
+                    <style>
+                        @media print {
+                            @page { size: auto; margin: 12mm; }
+                        }
+                        body { margin: 16px; }
+                        h2, h3 { font-weight: 600; }
+                        table { font-size: 14px; }
+                    </style>
+                </head>
+                <body>${contentHTML}</body>
+                </html>
+            `);
+            w.document.close();
+            w.focus();
+            w.print();
+            w.close();
+        }
+
+        function printRegistro(id) {
+            const registro = registros.find(r => r.id === id);
+            if (!registro) {
+                showToast("Registro no encontrado para imprimir", "error");
+                return;
+            }
+            const html = buildRegistroPrintable(registro);
+            printHTMLContent(html);
+        }
+
+        function printModal(tipo) {
+            // Construye un objeto 'registro' temporal con los valores actuales del formulario
+            const getVal = (id) => {
+                const el = document.getElementById(id);
+                return el ? el.value : '';
+            };
+            const nombre = getVal(`${tipo}Nombre`);
+            const dni = getVal(`${tipo}DNI`);
+            const edad = getVal(`${tipo}Edad`);
+            const telefono = getVal(`${tipo}Telefono`);
+            const direccion = (tipo === 'proteccion') ? getVal('proteccionDireccion') : '';
+            const descripcion = (tipo === 'proteccion') ? getVal('proteccionSituacion')
+                : (tipo === 'capacidad') ? getVal('capacidadMotivo')
+                : (tipo === 'restriccion') ? getVal('restriccionFundamentos')
+                : getVal('internacionDiagnostico');
+            const intervencion = getVal(`${tipo}Intervencion`);
+            
+            let organismoNombre = '';
+            let organismoContacto = '';
+            
+            if (document.getElementById(`${tipo}NuevoOrganismoCheck`)?.checked) {
+                organismoNombre = getVal(`${tipo}NuevoOrganismo`);
+                organismoContacto = getVal(`${tipo}NuevoContacto`);
+            } else {
+                const sel = document.getElementById(`${tipo}Organismo`);
+                const idx = sel ? sel.value : '';
+                if (idx !== '' && idx !== 'otro' && organismos[idx]) {
+                    organismoNombre = organismos[idx].nombre || '';
+                    organismoContacto = organismos[idx].email || organismos[idx].telefono || organismos[idx].contacto || '';
+                }
+            }
+            
+            const registroTmp = {
+                tipo: getTipoNombre(tipo),
+                nombre, dni, edad: edad ? parseInt(edad) : '',
+                telefono, direccion, descripcion, intervencion,
+                organismo: { nombre: organismoNombre, contacto: organismoContacto },
+                fecha: new Date().toISOString(),
+                estado: '—'
+            };
+            
+            const html = buildRegistroPrintable(registroTmp);
+            printHTMLContent(html);
+        }
+        // ====== Fin funciones de impresión ======
+
     </script>
 </body>
 </html>
